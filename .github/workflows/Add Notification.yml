@@ -1,5 +1,4 @@
 name: Add Notification
-
 on:
   workflow_dispatch:
     inputs:
@@ -14,38 +13,33 @@ on:
         required: true
         default: 'Info'
 
+permissions:
+  contents: write  # <-- Add this to grant write access
+
 jobs:
   AddNotification:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout repo and allow pushing
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # <- this is required to push
-
-      # Setup Node.js (for JSON manipulation)
+          persist-credentials: true
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-
-      # Add notification to JSON
+      
       - name: Add Notification To File
         run: |
           FILE="Notifications.json"
           MAX_COUNT=50
-
-          # Ensure file exists
           if [ ! -f "$FILE" ]; then
             echo "[]" > "$FILE"
           fi
-
           EXISTING=$(cat "$FILE")
           ID=$(uuidgen)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-
           NEW=$(jq -n \
             --arg Id "$ID" \
             --arg Title "${{ github.event.inputs.Title }}" \
@@ -53,20 +47,13 @@ jobs:
             --arg Type "${{ github.event.inputs.Type }}" \
             --arg Timestamp "$TIMESTAMP" \
             '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
-
-          # Only add if not already present
           UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" \
             'if any(.[]; .Id == $new.Id) then . else . + [$new] end')
-
-          # Keep only last MAX_COUNT notifications
           UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
-
-          # Write back if changed
           if [ "$(echo "$EXISTING" | jq -c '.')" != "$(echo "$UPDATED" | jq -c '.')" ]; then
             echo "$UPDATED" | jq '.' > "$FILE"
           fi
-
-      # Commit & push
+      
       - name: Commit And Push Changes
         run: |
           git config user.name "GitHub Actions"
@@ -76,5 +63,3 @@ jobs:
             git commit -m "Notification Added"
             git push
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
