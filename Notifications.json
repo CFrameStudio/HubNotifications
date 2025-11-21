@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "Id": "f1bc79c3-6949-4e56-b02f-a9e33b4b39b5",
+    "Title": "Test",
+    "Message": "Hello World!",
+    "Type": "Info",
+    "Timestamp": "2025-11-21T08:26:18.226Z",
+    "Read": false
+  }
+]
