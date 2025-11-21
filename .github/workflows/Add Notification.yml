@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
     steps:
       - name: CheckoutRepository
         uses: actions/checkout@v3
@@ -32,9 +31,8 @@ jobs:
       - name: AddNotificationToFile
         run: |
           FILE="Notifications.json"
-          MAX_COUNT=50
 
-          # Create file if missing
+          # Ensure the file exists
           if [ ! -f "$FILE" ]; then
             echo "[]" > "$FILE"
           fi
@@ -44,16 +42,17 @@ jobs:
           ID=$(uuidgen)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
 
-          NEW=$(jq -n --arg Id "$ID" \
-                       --arg Title "${{ github.event.inputs.Title }}" \
-                       --arg Message "${{ github.event.inputs.Message }}" \
-                       --arg Type "${{ github.event.inputs.Type }}" \
-                       --arg Timestamp "$TIMESTAMP" \
-                       '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
+          NEW=$(jq -n \
+            --arg Id "$ID" \
+            --arg Title "${{ github.event.inputs.Title }}" \
+            --arg Message "${{ github.event.inputs.Message }}" \
+            --arg Type "${{ github.event.inputs.Type }}" \
+            --arg Timestamp "$TIMESTAMP" \
+            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
 
           UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" \
-                       'if any(.[]; .Title == $new.Title and .Message == $new.Message and .Timestamp == $new.Timestamp) then . else . + [$new] end')
-                       
+                     'if any(.[]; .Id == $new.Id) then . else . + [$new] end')
+
           UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
 
           if [ "$(echo "$EXISTING" | jq -c '.')" != "$(echo "$UPDATED" | jq -c '.')" ]; then
@@ -68,3 +67,4 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Notification Added"
             git push origin HEAD:${GITHUB_REF_NAME}
+          fi
