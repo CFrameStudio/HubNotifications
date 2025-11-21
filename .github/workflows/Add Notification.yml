@@ -1,4 +1,4 @@
-name: AddNotification
+name: Add Notification
 
 on:
   workflow_dispatch:
@@ -17,41 +17,41 @@ on:
 jobs:
   AddNotification:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: CheckoutRepository
-        uses: actions/checkout@v3
 
-      - name: SetupNodeJs
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: AddNotificationToFile
+      - name: Add Notification To File
         run: |
           FILE="Notifications.json"
+          MAX_COUNT=50
 
-          # Ensure the file exists
+          # Ensure file exists
           if [ ! -f "$FILE" ]; then
             echo "[]" > "$FILE"
           fi
 
           EXISTING=$(cat "$FILE")
-
           ID=$(uuidgen)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
 
-          NEW=$(jq -n \
-            --arg Id "$ID" \
-            --arg Title "${{ github.event.inputs.Title }}" \
-            --arg Message "${{ github.event.inputs.Message }}" \
-            --arg Type "${{ github.event.inputs.Type }}" \
-            --arg Timestamp "$TIMESTAMP" \
-            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
+          NEW=$(jq -n --arg Id "$ID" \
+                       --arg Title "${{ github.event.inputs.Title }}" \
+                       --arg Message "${{ github.event.inputs.Message }}" \
+                       --arg Type "${{ github.event.inputs.Type }}" \
+                       --arg Timestamp "$TIMESTAMP" \
+                       '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
 
           UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" \
-                     'if any(.[]; .Id == $new.Id) then . else . + [$new] end')
+                       'if any(.[]; .Title == $new.Title and .Message == $new.Message and .Timestamp == $new.Timestamp) then . else . + [$new] end')
 
           UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
 
@@ -59,12 +59,12 @@ jobs:
             echo "$UPDATED" | jq '.' > "$FILE"
           fi
 
-      - name: CommitAndPushChanges
+      - name: Commit and Push Changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Notifications.json
           if ! git diff --cached --quiet; then
             git commit -m "Notification Added"
-            git push origin HEAD:${GITHUB_REF_NAME}
+            git push
           fi
