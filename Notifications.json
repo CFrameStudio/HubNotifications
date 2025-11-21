@@ -14,5 +14,13 @@
     "Type": "Info",
     "Timestamp": "2025-11-21T08:34:55.379Z",
     "Read": false
+  },
+  {
+    "Id": "42531220-1735-4303-9e51-b5b5d9e38085",
+    "Title": "Hello",
+    "Message": "World",
+    "Type": "Info",
+    "Timestamp": "2025-11-21T10:45:07.238Z",
+    "Read": false
   }
 ]
