@@ -38,8 +38,11 @@ jobs:
           EXISTING=$(cat "$FILE")
 
           ID=$(uuidgen)
+          echo "Generated ID: $ID"
+          
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-
+          echo "Timestamp: $TIMESTAMP"
+          
           NEW=$(jq -n --arg Id "$ID" \
                        --arg Title "${{ github.event.inputs.Title }}" \
                        --arg Message "${{ github.event.inputs.Message }}" \
