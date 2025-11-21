@@ -24,7 +24,7 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Setup NodeJs
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -54,7 +54,7 @@ jobs:
                      'if any(.[]; .Id == $new.Id) then . else . + [$new] end')
 
           UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
-          echo "$UPDATED" | jq '.' > "$FILE"
+          echo "$UPDATED" > "$FILE"
 
       - name: Commit And Push Changes
         run: |
