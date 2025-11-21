@@ -1,4 +1,4 @@
-name: Add Notification
+name: AddNotification
 
 on:
   workflow_dispatch:
@@ -17,20 +17,24 @@ on:
 jobs:
   AddNotification:
     runs-on: ubuntu-latest
-
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
     steps:
-      - name: Checkout
+      - name: CheckoutRepository
         uses: actions/checkout@v3
 
-      - name: Setup NodeJs
+      - name: SetupNodeJs
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Add Notification To File
+      - name: AddNotificationToFile
         run: |
           FILE="Notifications.json"
+          MAX_COUNT=50
 
+          # Create file if missing
           if [ ! -f "$FILE" ]; then
             echo "[]" > "$FILE"
           fi
@@ -38,9 +42,8 @@ jobs:
           EXISTING=$(cat "$FILE")
 
           ID=$(uuidgen)
-          
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-          
+
           NEW=$(jq -n --arg Id "$ID" \
                        --arg Title "${{ github.event.inputs.Title }}" \
                        --arg Message "${{ github.event.inputs.Message }}" \
@@ -50,19 +53,18 @@ jobs:
 
           UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" \
                        'if any(.[]; .Title == $new.Title and .Message == $new.Message and .Timestamp == $new.Timestamp) then . else . + [$new] end')
-
+                       
           UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
 
           if [ "$(echo "$EXISTING" | jq -c '.')" != "$(echo "$UPDATED" | jq -c '.')" ]; then
             echo "$UPDATED" | jq '.' > "$FILE"
           fi
 
-      - name: Commit And Push Changes
+      - name: CommitAndPushChanges
         run: |
-          git config user.name "GitHub-Actions[Bot]"
-          git config user.email "GitHub-Actions[Bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git add Notifications.json
           if ! git diff --cached --quiet; then
             git commit -m "Notification Added"
-            git push
-          fi
+            git push origin HEAD:${GITHUB_REF_NAME}
