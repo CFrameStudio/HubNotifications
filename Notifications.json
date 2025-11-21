@@ -6,5 +6,13 @@
     "Type": "Info",
     "Timestamp": "2025-11-21T08:26:18.226Z",
     "Read": false
+  },
+  {
+    "Id": "1736dfed-b292-46ab-b2e2-3cb5121633e0",
+    "Title": "Another Test",
+    "Message": "Hello World! 2",
+    "Type": "Info",
+    "Timestamp": "2025-11-21T08:34:55.379Z",
+    "Read": false
   }
 ]
