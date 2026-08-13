@@ -40,7 +40,6 @@ jobs:
           ID=$(uuidgen)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
           
-          # Convert blank input to a true JSON null, otherwise string
           IMG_VAL="${{ github.event.inputs.Image }}"
           if [ -z "$IMG_VAL" ]; then
             IMG_JSON="null"
