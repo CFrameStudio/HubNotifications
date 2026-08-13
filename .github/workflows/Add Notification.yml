@@ -12,47 +12,54 @@ on:
         description: 'Notification Type'
         required: true
         default: 'Info'
+      Image:
+        description: 'Image URL (Optional)'
+        required: false
+        default: ''
 
 permissions:
-  contents: write  # <-- Add this to grant write access
+  contents: write
+  actions: write
 
 jobs:
   AddNotification:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: true
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
       
       - name: Add Notification To File
         run: |
           FILE="Notifications.json"
-          MAX_COUNT=50
-          if [ ! -f "$FILE" ]; then
+          if [ ! -f "$FILE" ] || [ ! -s "$FILE" ]; then
             echo "[]" > "$FILE"
           fi
           EXISTING=$(cat "$FILE")
           ID=$(uuidgen)
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          
+          # Convert blank input to a true JSON null, otherwise string
+          IMG_VAL="${{ github.event.inputs.Image }}"
+          if [ -z "$IMG_VAL" ]; then
+            IMG_JSON="null"
+          else
+            IMG_JSON="\"$IMG_VAL\""
+          fi
+
           NEW=$(jq -n \
             --arg Id "$ID" \
             --arg Title "${{ github.event.inputs.Title }}" \
             --arg Message "${{ github.event.inputs.Message }}" \
             --arg Type "${{ github.event.inputs.Type }}" \
             --arg Timestamp "$TIMESTAMP" \
-            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Read:false}')
-          UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" \
-            'if any(.[]; .Id == $new.Id) then . else . + [$new] end')
-          UPDATED=$(echo "$UPDATED" | jq ".[-50:]")
-          if [ "$(echo "$EXISTING" | jq -c '.')" != "$(echo "$UPDATED" | jq -c '.')" ]; then
-            echo "$UPDATED" | jq '.' > "$FILE"
-          fi
+            --argjson Image "$IMG_JSON" \
+            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Image:$Image, Read:false}')
+          
+          UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" '. + [$new] | (.[-50:] // .)')
+          
+          echo "$UPDATED" | jq '.' > "$FILE"
       
       - name: Commit And Push Changes
         run: |
@@ -60,6 +67,12 @@ jobs:
           git config user.email "actions@github.com"
           git add Notifications.json
           if ! git diff --cached --quiet; then
-            git commit -m "Notification Added"
+            git commit -m "Notification Added [skip ci]"
             git push
           fi
+
+      - name: Trigger Pages Deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run "Deploy Notifications to Pages" --ref main
