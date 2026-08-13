@@ -3,13 +3,13 @@ on:
   workflow_dispatch:
     inputs:
       Title:
-        description: 'Notification Title'
+        description: 'Title'
         required: true
       Message:
-        description: 'Notification Message'
+        description: 'Message'
         required: true
       Type:
-        description: 'Notification Type'
+        description: 'Type'
         required: true
         default: 'Info'
       Image:
@@ -17,7 +17,7 @@ on:
         required: false
         default: ''
       Link:
-        description: 'Target Website Link'
+        description: 'Link URL'
         required: false
         default: ''
 
