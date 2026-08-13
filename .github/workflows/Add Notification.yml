@@ -13,7 +13,11 @@ on:
         required: true
         default: 'Info'
       Image:
-        description: 'Image URL (Optional)'
+        description: 'Image URL'
+        required: false
+        default: ''
+      Link:
+        description: 'Target Website Link'
         required: false
         default: ''
 
@@ -47,6 +51,13 @@ jobs:
             IMG_JSON="\"$IMG_VAL\""
           fi
 
+          LINK_VAL="${{ github.event.inputs.Link }}"
+          if [ -z "$LINK_VAL" ]; then
+            LINK_JSON="null"
+          else
+            LINK_JSON="\"$LINK_VAL\""
+          fi
+
           NEW=$(jq -n \
             --arg Id "$ID" \
             --arg Title "${{ github.event.inputs.Title }}" \
@@ -54,7 +65,8 @@ jobs:
             --arg Type "${{ github.event.inputs.Type }}" \
             --arg Timestamp "$TIMESTAMP" \
             --argjson Image "$IMG_JSON" \
-            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Image:$Image, Read:false}')
+            --argjson Link "$LINK_JSON" \
+            '{Id:$Id, Title:$Title, Message:$Message, Type:$Type, Timestamp:$Timestamp, Image:$Image, Link:$Link, Read:false}')
           
           UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW" '. + [$new] | (.[-50:] // .)')
           
